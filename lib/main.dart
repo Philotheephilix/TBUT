@@ -1,130 +1,65 @@
+import 'package:eyetear/pages/history_page.dart';
+import 'package:eyetear/pages/home_page.dart';
+import 'package:eyetear/pages/profile_page.dart';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'dart:convert';  // Import this for Base64 encoding
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final cameras = await availableCameras();
-  runApp(MyApp(camera: cameras.first));
+void main() {
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final CameraDescription camera;
-
-  const MyApp({Key? key, required this.camera}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: CameraScreen(camera: camera),
+      debugShowCheckedModeBanner: false,
+      home: MainPage(),  // Set MainPage as the home of the app
     );
   }
 }
 
-class CameraScreen extends StatefulWidget {
-  final CameraDescription camera;
-
-  const CameraScreen({Key? key, required this.camera}) : super(key: key);
-
+class MainPage extends StatefulWidget {
   @override
-  _CameraScreenState createState() => _CameraScreenState();
+  _MainPageState createState() => _MainPageState();
 }
 
-class _CameraScreenState extends State<CameraScreen> {
-  late CameraController _controller;
-  late Future<void> _initializeControllerFuture;
-  late IO.Socket socket;
-  bool _isStreaming = false;
+class _MainPageState extends State<MainPage> {
+  int _page = 0;
+  GlobalKey<CurvedNavigationBarState> _bottomNavigationKey = GlobalKey();
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = CameraController(
-      widget.camera,
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
-    _initializeControllerFuture = _controller.initialize();
-
-    socket = IO.io('http://192.168.43.98:8765', <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': false,
-    });
-    socket.connect();
-
-    socket.onConnect((_) {
-      print('Connected to server');
-    });
-
-    socket.onDisconnect((_) {
-      print('Disconnected from server');
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    socket.disconnect();
-    super.dispose();
-  }
-
-  void _toggleStreaming() {
-    setState(() {
-      _isStreaming = !_isStreaming;
-    });
-    if (_isStreaming) {
-      _startStreaming();
-    } else {
-      _stopStreaming();
-    }
-  }
-
-  void _startStreaming() async {
-    try {
-      _controller.startImageStream((CameraImage image) {
-        final planes = image.planes.map((plane) {
-          final base64Bytes = base64Encode(plane.bytes);
-          return {
-            'bytes': base64Bytes,
-            'bytesPerRow': plane.bytesPerRow,
-            'bytesPerPixel': plane.bytesPerPixel,
-          };
-        }).toList();
-
-        socket.emit('video_frame', {
-          'width': image.width,
-          'height': image.height,
-          'planes': planes,
-          'format': image.format.raw,
-        });
-      });
-    } catch (e) {
-      print("Error starting stream: $e");
-    }
-  }
-
-  void _stopStreaming() {
-    _controller.stopImageStream();
-  }
+  final List<Widget> _pages = [
+    HomePage(),      // The main capturing page
+    HistoryPage(),   // The history page
+    ProfilePage(),   // The profile page
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Video Stream')),
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return CameraPreview(_controller);
-          } else {
-            return Center(child: CircularProgressIndicator());
-          }
-        },
+      appBar: AppBar(
+        toolbarHeight: 60,
+        title: Text('AGARWAL EYE HOSPTIAL',style: TextStyle(color: Color(0xFFF7EFE5),fontWeight:FontWeight.w300)),
+        backgroundColor: Color(0xFF6B4389), // Purple color matching the design
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(_isStreaming ? Icons.stop : Icons.play_arrow),
-        onPressed: _toggleStreaming,
+      body: _pages[_page], // Display the current page
+      bottomNavigationBar: CurvedNavigationBar(
+        key: _bottomNavigationKey,
+        index: 0,
+        height: 75.0,
+items: <Widget>[
+          Icon(Icons.radio_button_checked_rounded, size: 40, color: _page == 0 ? Color(0xFF674188): Color(0xFFF7EFE5)),
+          Icon(Icons.history, size: 40, color: _page == 1 ? Color(0xFF674188) : Color(0xFFF7EFE5)),
+          Icon(Icons.person, size: 40, color: _page == 2 ? Color(0xFF674188) : Color(0xFFF7EFE5)),
+        ],        color: Color(0xFF674188), 
+        buttonBackgroundColor: Color(0xFFF7EFE5), 
+        backgroundColor: Color(0xFFF7EFE5), 
+        animationCurve: Curves.easeInOutSine,
+        animationDuration: Duration(milliseconds: 200),
+        onTap: (index) {
+          setState(() {
+            _page = index;
+          });
+        },
       ),
     );
   }
