@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Video Stream</title>
+</head>
+<body>
+    <img id="videoStream" src="" alt="Live Video Stream">
+    <script>
+        function updateImage() {
+            document.getElementById('videoStream').src = 'latest_frame.jpg?t=' + new Date().getTime();
+        }
+        setInterval(updateImage, 330); // Update at ~30 fps
+    </script>
+</body>
+</html>
