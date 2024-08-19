@@ -1,8 +1,7 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
-import base64
-import cv2
 import numpy as np
+import cv2
 import os
 
 app = Flask(__name__)
@@ -20,11 +19,8 @@ def index():
 @socketio.on('live_stream')
 def handle_live_stream(data):
     try:
-        print(f"Received data length: {len(data)}")
-        decoded_data = base64.b64decode(data)
-        
         # Convert the byte data to a numpy array
-        nparr = np.frombuffer(decoded_data, np.uint8)
+        nparr = np.frombuffer(data, np.uint8)
         
         # Decode the image
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
