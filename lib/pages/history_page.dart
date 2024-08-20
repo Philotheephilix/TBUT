@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 class HistoryPage extends StatelessWidget {
+  const HistoryPage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
            backgroundColor: Color(0xFFF7EFE5),
 
       body: Center(

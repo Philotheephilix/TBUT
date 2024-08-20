@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'camera.dart';
 class CapturingButton extends StatelessWidget {
+  const CapturingButton({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -10,15 +12,15 @@ class CapturingButton extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: () {
         _showInputDialog(context);          },
-          label: Text('Start Capturing',style: TextStyle(color: Color(0xFFF7EFE5),fontWeight:FontWeight.w600,fontSize: 22)),
-                  icon: Icon(Icons.radio_button_checked_rounded, color: Colors.white),
+          label: const Text('Start Capturing',style: TextStyle(color: Color(0xFFF7EFE5),fontWeight:FontWeight.w600,fontSize: 22)),
+                  icon: const Icon(Icons.radio_button_checked_rounded, color: Colors.white),
       
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF6B4389), // Button color (matches the purple in the screenshot)
+            backgroundColor: const Color(0xFF6B4389), // Button color (matches the purple in the screenshot)
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
             ),
-            padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
           ),
         ),
       ),
@@ -30,8 +32,8 @@ void _showInputDialog(BuildContext context) {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Enter Details'),
-          content: Column(
+          title: const Text('Enter Details'),
+          content: const Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               TextField(
@@ -47,18 +49,18 @@ void _showInputDialog(BuildContext context) {
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
                Navigator.of(context).pop(); // Close the dialog
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => CameraScreen(),
+                    builder: (context) => const CameraScreen(),
                   ),
                 ); // Close the dialog
               },
-              child: Text('Submit'),
+              child: const Text('Submit'),
             ),
           ],
         );
