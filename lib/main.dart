@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -40,17 +42,23 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
   late Future<void> _initializeControllerFuture;
   late IO.Socket _socket;
   bool _isStreaming = false;
+  late Isolate _isolate;
+  late StreamController<Uint8List> _streamController;
+  late ReceivePort _receivePort;
 
   @override
   void initState() {
     super.initState();
     _controller = CameraController(
       widget.camera,
-      ResolutionPreset.medium,
+      ResolutionPreset.high,
       enableAudio: false,
     );
     _initializeControllerFuture = _controller.initialize();
     _connectToServer();
+
+    _streamController = StreamController<Uint8List>();
+    _receivePort = ReceivePort();
   }
 
   void _connectToServer() {
@@ -67,10 +75,12 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
       _isStreaming = true;
     });
 
+    await _initializeIsolate();
+
     while (_isStreaming) {
       final XFile image = await _controller.takePicture();
       final Uint8List imageBytes = await image.readAsBytes();
-      _sendFrameToServer(imageBytes);
+      _streamController.add(imageBytes);
     }
   }
 
@@ -78,11 +88,40 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
     setState(() {
       _isStreaming = false;
     });
+    _streamController.close();
+    _isolate.kill(priority: Isolate.immediate);
   }
 
-  void _sendFrameToServer(Uint8List imageBytes) {
-    String base64Image = base64Encode(imageBytes);
-    _socket.emit('frame', {'image': base64Image});
+  Future<void> _initializeIsolate() async {
+    _isolate = await Isolate.spawn(_processImages, _receivePort.sendPort);
+
+    _receivePort.listen((data) {
+      if (data is Uint8List) {
+        _socket.emit('frame', {'image': data});
+      }
+    });
+
+    _streamController.stream.listen((imageBytes) {
+      _sendToIsolate(imageBytes);
+    });
+  }
+
+  void _sendToIsolate(Uint8List imageBytes) {
+    _receivePort.sendPort.send(imageBytes);
+  }
+
+  static void _processImages(SendPort sendPort) {
+    final receivePort = ReceivePort();
+
+    receivePort.listen((data) async {
+      if (data is Uint8List) {
+        // Perform any image processing here if needed
+        // For now, we just send the raw image data
+        sendPort.send(data);
+      }
+    });
+
+    sendPort.send(receivePort.sendPort);
   }
 
   @override
