@@ -1,22 +1,43 @@
+import 'package:eyetear/components/captureSend.dart';
 import 'package:flutter/material.dart';
-import 'camera.dart';
-class CapturingButton extends StatelessWidget {
-  const CapturingButton({super.key});
+import 'package:camera/camera.dart';
+
+class CapturingButton extends StatefulWidget {
+  const CapturingButton({Key? key}) : super(key: key);
+
+  @override
+  _CapturingButtonState createState() => _CapturingButtonState();
+}
+
+class _CapturingButtonState extends State<CapturingButton> {
+  CameraDescription? firstCamera;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    final cameras = await availableCameras();
+    setState(() {
+      firstCamera = cameras.first;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      
       child: Center(
-       
         child: ElevatedButton.icon(
           onPressed: () {
-        _showInputDialog(context);          },
-          label: const Text('Start Capturing',style: TextStyle(color: Color(0xFFF7EFE5),fontWeight:FontWeight.w600,fontSize: 22)),
-                  icon: const Icon(Icons.radio_button_checked_rounded, color: Colors.white),
-      
+            _showInputDialog(context);
+          },
+          label: const Text('Start Capturing',
+              style: TextStyle(color: Color(0xFFF7EFE5), fontWeight: FontWeight.w600, fontSize: 22)),
+          icon: const Icon(Icons.radio_button_checked_rounded, color: Colors.white),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6B4389), // Button color (matches the purple in the screenshot)
+            backgroundColor: const Color(0xFF6B4389),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
             ),
@@ -26,8 +47,8 @@ class CapturingButton extends StatelessWidget {
       ),
     );
   }
-}
-void _showInputDialog(BuildContext context) {
+
+  void _showInputDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -47,18 +68,24 @@ void _showInputDialog(BuildContext context) {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-               Navigator.of(context).pop(); // Close the dialog
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CameraScreen(),
-                  ),
-                ); // Close the dialog
+                Navigator.of(context).pop();
+                if (firstCamera != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => CameraStreamPage(camera: firstCamera!),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Camera not initialized yet. Please try again.')),
+                  );
+                }
               },
               child: const Text('Submit'),
             ),
@@ -67,5 +94,4 @@ void _showInputDialog(BuildContext context) {
       },
     );
   }
-  
-
+}
