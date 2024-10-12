@@ -1,28 +1,37 @@
 from flask import Flask, request
 from flask_socketio import SocketIO
 import base64
-import os
+import io
 from datetime import datetime
+from PIL import Image
+from inference_sdk import InferenceHTTPClient
 
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-SAVE_FOLDER = 'frames'
-os.makedirs(SAVE_FOLDER, exist_ok=True)
+# Initialize the inference client
+CLIENT = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com",
+    api_key="vMHIxbNsc6wiOExiBDTq"
+)
 
 @socketio.on('frame')
 def handle_frame(data):
     image_data = data.get('image')
+    
     if isinstance(image_data, str):
         image_data = base64.b64decode(image_data)
-    if isinstance(image_data, bytes):
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-        filename = f"{SAVE_FOLDER}/{timestamp}.jpg"
-        # Write the binary data to a file
-        with open(filename, 'wb') as f:
-            f.write(image_data)
 
-        print(f"Received frame and saved as {filename}")
+    if isinstance(image_data, bytes):
+        # Convert bytes to PIL image
+        image = Image.open(io.BytesIO(image_data))
+        
+        # Perform inference on the image
+        result = CLIENT.infer(image, model_id="tbut_obj_classif/2")
+
+        # Process the result as needed (this is where you can handle the output)
+        print(f"Inference result: {result}")
+
     else:
         print("Error: Unable to process image data.")
 

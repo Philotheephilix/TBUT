@@ -39,7 +39,7 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
   }
 
   void _connectToServer() {
-    _socket = IO.io('http://192.168.43.98:5000', <String, dynamic>{
+    _socket = IO.io('http://172.31.98.196:5000', <String, dynamic>{
       'transports': ['websocket'],
     });
     _socket.onConnect((_) {
@@ -55,9 +55,14 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
     await _initializeIsolate();
 
     while (_isStreaming) {
+      try{
       final XFile image = await _controller.takePicture();
       final Uint8List imageBytes = await image.readAsBytes();
       _streamController.add(imageBytes);
+      }
+      catch(e){
+
+      }
     }
   }
 
