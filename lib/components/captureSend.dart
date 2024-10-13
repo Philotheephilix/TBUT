@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 class CameraStreamPage extends StatefulWidget {
   final CameraDescription camera;
@@ -22,6 +23,8 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
   late Isolate _isolate;
   late StreamController<Uint8List> _streamController;
   late ReceivePort _receivePort;
+  String _clientId = Uuid().v4();
+  List<String> _predictions = []; // List to store predictions
 
   @override
   void initState() {
@@ -43,7 +46,16 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
       'transports': ['websocket'],
     });
     _socket.onConnect((_) {
-      print('Connected to server');
+      print('Connected to server with client ID: $_clientId');
+    });
+
+    // Listen for prediction results from the server
+    _socket.on('inference_result', (data) {
+      setState(() {
+        _predictions.add(data.toString()); 
+        print(data);
+        // Assuming the result is a string
+      });
     });
   }
 
@@ -55,13 +67,12 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
     await _initializeIsolate();
 
     while (_isStreaming) {
-      try{
-      final XFile image = await _controller.takePicture();
-      final Uint8List imageBytes = await image.readAsBytes();
-      _streamController.add(imageBytes);
-      }
-      catch(e){
-
+      try {
+        final XFile image = await _controller.takePicture();
+        final Uint8List imageBytes = await image.readAsBytes();
+        _streamController.add(imageBytes);
+      } catch (e) {
+        print("Error taking picture: $e");
       }
     }
   }
@@ -72,6 +83,9 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
     });
     _streamController.close();
     _isolate.kill(priority: Isolate.immediate);
+
+    // Display predictions when streaming stops
+    _showPredictions();
   }
 
   Future<void> _initializeIsolate() async {
@@ -79,7 +93,7 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
 
     _receivePort.listen((data) {
       if (data is Uint8List) {
-        _socket.emit('frame', {'image': data});
+        _socket.emit('frame', {'image': data, 'client_id': _clientId});
       }
     });
 
@@ -102,6 +116,30 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
     });
 
     sendPort.send(receivePort.sendPort);
+  }
+
+  void _showPredictions() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Predictions'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: _predictions.map((prediction) => Text(prediction)).toList(),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

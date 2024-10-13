@@ -22,24 +22,26 @@ class HistoryPage extends StatelessWidget {
     },
   ];
 
+  HistoryPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF7EFE5), // Background color from your design
+      backgroundColor: const Color(0xFFF7EFE5), // Background color from your design
 
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             // Header row
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(child: Text('Patient ID', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6B4389)))),
                 Expanded(child: Text('Patient Name', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6B4389)))),
               ],
             ),
-            Divider(color: Color(0xFF6B4389)), // Divider matching the purple color
+            const Divider(color: Color(0xFF6B4389)), // Divider matching the purple color
             // List builder for dynamic content
             Expanded(
               child: ListView.builder(
@@ -51,7 +53,7 @@ class HistoryPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>TestDetails(),
+                          builder: (context) =>const TestDetails(),
                         ),
                       );
                     },
@@ -60,8 +62,8 @@ class HistoryPage extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(child: Text(patientData[index]['patientID'] ?? '', style: TextStyle(color: Color(0xFF6B4389)))),
-                          Expanded(child: Text(patientData[index]['patientName'] ?? '', style: TextStyle(color: Color(0xFF6B4389)))),
+                          Expanded(child: Text(patientData[index]['patientID'] ?? '', style: const TextStyle(color: Color(0xFF6B4389)))),
+                          Expanded(child: Text(patientData[index]['patientName'] ?? '', style: const TextStyle(color: Color(0xFF6B4389)))),
                         ],
                       ),
                     ),
@@ -79,72 +81,72 @@ class HistoryPage extends StatelessWidget {
 class DummyRedirectPage extends StatelessWidget {
   final String patientName;
 
-  DummyRedirectPage({required this.patientName});
+  const DummyRedirectPage({super.key, required this.patientName});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dummy Redirect'),
-        backgroundColor: Color(0xFF6B4389), // Matching purple color
+        title: const Text('Dummy Redirect'),
+        backgroundColor: const Color(0xFF6B4389), // Matching purple color
       ),
       body: Center(
         child: Text(
           'Redirected to details for $patientName',
-          style: TextStyle(fontSize: 24, color: Color(0xFF6B4389)),
+          style: const TextStyle(fontSize: 24, color: Color(0xFF6B4389)),
         ),
       ),
     );
   }
 }
 class TestDetails extends StatelessWidget {
-  TestDetails({super.key});
+  const TestDetails({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Patient Details'),
-        backgroundColor: Color(0xFF6B4389), // Matching purple color
+        title: const Text('Patient Details'),
+        backgroundColor: const Color(0xFF6B4389), // Matching purple color
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Patient Details Section
-            Text(
+            const Text(
               'Patient Details',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
-            Text(
+            const SizedBox(height: 10),
+            const Text(
               'Patient Name: Raja',
               style: TextStyle(fontSize: 18),
             ),
-            Text(
+            const Text(
               'Patient ID: 467',
               style: TextStyle(fontSize: 18),
             ),
-            Text(
+            const Text(
               'Doctor Incharge: Jayachandran R',
               style: TextStyle(fontSize: 18),
             ),
-            Text(
+            const Text(
               'Patient Age: 47',
               style: TextStyle(fontSize: 18),
             ),
-            SizedBox(height: 20),
-            Text(
+            const SizedBox(height: 20),
+            const Text(
               'Test History',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             // Test History Table
             Table(
               border: TableBorder.all(color: Colors.black),
               children: [
-                TableRow(children: [
+                const TableRow(children: [
                   Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text('Date & Time', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -177,19 +179,19 @@ class TestDetails extends StatelessWidget {
 TableRow buildTableRow(String dateTime, String doctorId, String doctorName, String result) {
     return TableRow(children: [
       Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: Text(dateTime),
       ),
       Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: Text(doctorId),
       ),
       Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: Text(doctorName),
       ),
       Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: Text(result),
       ),
     ]);
