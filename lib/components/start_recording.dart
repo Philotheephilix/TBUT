@@ -1,6 +1,7 @@
 import 'package:eyetear/components/captureSend.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'dart:async';
 
 class CapturingButton extends StatefulWidget {
   const CapturingButton({super.key});
@@ -11,6 +12,8 @@ class CapturingButton extends StatefulWidget {
 
 class _CapturingButtonState extends State<CapturingButton> {
   CameraDescription? firstCamera;
+  String doctorId = '';
+  String patientId = '';
 
   @override
   void initState() {
@@ -23,6 +26,63 @@ class _CapturingButtonState extends State<CapturingButton> {
     setState(() {
       firstCamera = cameras.first;
     });
+  }
+
+  void _showInputDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter Details'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              TextField(
+                decoration: InputDecoration(labelText: 'Doctor ID'),
+                onChanged: (value) {
+                  doctorId = value;
+                },
+              ),
+              TextField(
+                decoration: InputDecoration(labelText: 'Patient ID'),
+                onChanged: (value) {
+                  patientId = value;
+                },
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (firstCamera != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => CameraStreamPage(
+                        camera: firstCamera!,
+                        doctorId: doctorId,
+                        patientId: patientId,
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Camera not initialized yet. Please try again.')),
+                  );
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -43,53 +103,6 @@ class _CapturingButtonState extends State<CapturingButton> {
           padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
         ),
       ),
-    );
-  }
-
-  void _showInputDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Enter Details'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                decoration: InputDecoration(labelText: 'Doctor ID'),
-              ),
-              TextField(
-                decoration: InputDecoration(labelText: 'Patient ID'),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (firstCamera != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => CameraStreamPage(camera: firstCamera!),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Camera not initialized yet. Please try again.')),
-                  );
-                }
-              },
-              child: const Text('Submit'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

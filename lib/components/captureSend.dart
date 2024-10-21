@@ -1,15 +1,23 @@
 import 'dart:async';
-import 'dart:isolate';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+
 class CameraStreamPage extends StatefulWidget {
   final CameraDescription camera;
+  final String doctorId;
+  final String patientId;
 
-  const CameraStreamPage({super.key, required this.camera});
+  const CameraStreamPage({
+    super.key,
+    required this.camera,
+    required this.doctorId,
+    required this.patientId,
+  });
 
   @override
   _CameraStreamPageState createState() => _CameraStreamPageState();
@@ -20,11 +28,8 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
   late Future<void> _initializeControllerFuture;
   late IO.Socket _socket;
   bool _isStreaming = false;
-  late Isolate _isolate;
-  late StreamController<Uint8List> _streamController;
-  late ReceivePort _receivePort;
-  String _clientId = Uuid().v4();
-  List<String> _predictions = []; // List to store predictions
+  final String _clientId = const Uuid().v4();
+  final List<String> _predictions = [];
 
   @override
   void initState() {
@@ -36,9 +41,6 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
     );
     _initializeControllerFuture = _controller.initialize();
     _connectToServer();
-
-    _streamController = StreamController<Uint8List>();
-    _receivePort = ReceivePort();
   }
 
   void _connectToServer() {
@@ -49,12 +51,10 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
       print('Connected to server with client ID: $_clientId');
     });
 
-    // Listen for prediction results from the server
     _socket.on('inference_result', (data) {
       setState(() {
-        _predictions.add(data.toString()); 
+        _predictions.add(data['result'].toString());
         print(data);
-        // Assuming the result is a string
       });
     });
   }
@@ -64,13 +64,11 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
       _isStreaming = true;
     });
 
-    await _initializeIsolate();
-
     while (_isStreaming) {
       try {
         final XFile image = await _controller.takePicture();
         final Uint8List imageBytes = await image.readAsBytes();
-        _streamController.add(imageBytes);
+        _sendImageToServer(imageBytes);
       } catch (e) {
         print("Error taking picture: $e");
       }
@@ -81,41 +79,18 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
     setState(() {
       _isStreaming = false;
     });
-    _streamController.close();
-    _isolate.kill(priority: Isolate.immediate);
 
     // Display predictions when streaming stops
     _showPredictions();
   }
 
-  Future<void> _initializeIsolate() async {
-    _isolate = await Isolate.spawn(_processImages, _receivePort.sendPort);
-
-    _receivePort.listen((data) {
-      if (data is Uint8List) {
-        _socket.emit('frame', {'image': data, 'client_id': _clientId});
-      }
+  void _sendImageToServer(Uint8List imageBytes) {
+    _socket.emit('frame', {
+      'image': base64Encode(imageBytes),
+      'client_id': _clientId,
+      'doctor_id': widget.doctorId,
+      'patient_id': widget.patientId,
     });
-
-    _streamController.stream.listen((imageBytes) {
-      _sendToIsolate(imageBytes);
-    });
-  }
-
-  void _sendToIsolate(Uint8List imageBytes) {
-    _receivePort.sendPort.send(imageBytes);
-  }
-
-  static void _processImages(SendPort sendPort) {
-    final receivePort = ReceivePort();
-
-    receivePort.listen((data) async {
-      if (data is Uint8List) {
-        sendPort.send(data);
-      }
-    });
-
-    sendPort.send(receivePort.sendPort);
   }
 
   void _showPredictions() {
