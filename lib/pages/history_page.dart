@@ -75,8 +75,12 @@ class _HistoryPageState extends State<HistoryPage> {
                               patientName: patient['patient_name'] ?? 'Ilayaraja', // Default value
                               patientID: patient['patient_id'] ?? 'Unknown ID', // Handle null patient_id
                               result: (results != null && results.isNotEmpty)
-                                  ? _formatPredictions(results[0]['result']['predictions']) // Get predictions
-                                  : 'No Result Available', // Handle case where 'results' is empty or null
+    ? results.map((result) {
+        // Get predictions for each result and format them
+        return _formatPredictions(result['result']['predictions']);
+      }).toList().join(', ') // Join the formatted predictions into a single string
+    : 'No Result Available', // Handle case where 'results' is empty or null
+ // Get predictions
                             );
                           },
                         ),
@@ -102,13 +106,12 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  String _formatPredictions(List<dynamic> predictions) {
-    if (predictions.isEmpty) {
-      return 'No Predictions Available';
-    } else {
-      return predictions.map((prediction) => prediction.toString()).join(', '); // Join predictions into a string
-    }
-  }
+ String _formatPredictions(List<dynamic> predictions) {
+  return predictions.map((prediction) {
+    return '${prediction['label']} (${(prediction['confidence'] * 100).toStringAsFixed(1)}%)';
+  }).join(', ');
+}
+
 }
 
 
