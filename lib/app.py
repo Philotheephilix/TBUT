@@ -3,6 +3,7 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 import base64
 import io
+from flask import jsonify
 from PIL import Image
 from inference_sdk import InferenceHTTPClient
 from concurrent.futures import ThreadPoolExecutor
@@ -21,8 +22,9 @@ executor = ThreadPoolExecutor(max_workers=4)
 
 logging.basicConfig(level=logging.INFO)
 mongo_client = MongoClient("mongodb://localhost:27017/")
-db = mongo_client['eye_tear_aravind'] 
-predictions_collection = db['predictions']  
+db = mongo_client['eye_tear_aravind']  # Database name
+predictions_collection = db['predictions']  # Collection name
+  
 
 def perform_inference(image):
     result = CLIENT.infer(image, model_id="tbut_obj_classif/2")
@@ -71,8 +73,13 @@ def inference_worker(image, client_id, doctor_id, patient_id):
     socketio.emit('inference_result', {
         'result': result,
         'doctor_id': doctor_id,
-        'patient_id': patient_id
+        'patient_id': patient_id,
+        'patient_name': "Raja"
     }, room=client_id)
-
+@app.route('/api/predictions', methods=['GET'])
+def get_predictions():
+    predictions = predictions_collection.find({}, {'_id': 0})  # Fetch all predictions, excluding the MongoDB ID
+    result_list = list(predictions)  # Convert to list
+    return jsonify(result_list), 200
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

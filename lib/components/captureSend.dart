@@ -44,7 +44,7 @@ class _CameraStreamPageState extends State<CameraStreamPage> {
   }
 
   void _connectToServer() {
-    _socket = IO.io('http://172.31.98.196:5000', <String, dynamic>{
+    _socket = IO.io('http://10.0.2.2:5000', <String, dynamic>{
       'transports': ['websocket'],
     });
     _socket.onConnect((_) {
