@@ -43,3 +43,4 @@ app.*.map.json
 /android/app/release
 /frames
 /lib/frames
+/tf-model/Tbut_obj_classif.v2i.tensorflow
