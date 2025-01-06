@@ -44,3 +44,5 @@ app.*.map.json
 /frames
 /lib/frames
 pubspec.lock
+/node_server/node_modules
+node_server/bun.lockb
