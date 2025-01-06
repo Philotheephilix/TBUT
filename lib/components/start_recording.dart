@@ -1,3 +1,9 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// ignore_for_file: public_member_api_docs
+
 import 'dart:async';
 import 'dart:io';
 
@@ -35,7 +41,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   String? url;
   VideoPlayerController? videoController;
   VoidCallback? videoPlayerListener;
-  bool enableAudio = false;
+  bool enableAudio = true;
   bool useOpenGL = true;
   TextEditingController _textFieldController = TextEditingController(text: "rtmp://172.31.98.86:1935/live/your_stream");
 
@@ -105,6 +111,9 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
 
     return Scaffold(
       key: _scaffoldKey,
+      appBar: AppBar(
+        title: const Text('Camera example'),
+      ),
       body: Column(
         children: <Widget>[
           Expanded(
@@ -132,7 +141,6 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
                 _cameraTogglesRowWidget(),
-                _thumbnailWidget(),
               ],
             ),
           ),
@@ -181,33 +189,6 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
     );
   }
 
-  /// Display the thumbnail of the captured image or video.
-  Widget _thumbnailWidget() {
-    return Expanded(
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            videoController == null && imagePath == null
-                ? Container()
-                : SizedBox(
-                    width: 64.0,
-                    height: 64.0,
-                    child: (videoController == null)
-                        ? Image.file(File(imagePath!))
-                        : Container(
-                            decoration: BoxDecoration(border: Border.all(color: Colors.pink)),
-                            child: Center(
-                              child: AspectRatio(aspectRatio: videoController!.value.aspectRatio, child: VideoPlayer(videoController!)),
-                            ),
-                          ),
-                  ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /// Display the control bar with buttons to take pictures and record videos.
   Widget _captureControlRowWidget() {
@@ -218,22 +199,12 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
       mainAxisSize: MainAxisSize.max,
       children: <Widget>[
         IconButton(
-          icon: const Icon(Icons.camera_alt),
-          color: Colors.blue,
-          onPressed: controller != null && isControllerInitialized ? onTakePictureButtonPressed : null,
-        ),
-        IconButton(
-          icon: const Icon(Icons.videocam),
-          color: Colors.blue,
-          onPressed: controller != null && isControllerInitialized && !isRecordingVideo ? onVideoRecordButtonPressed : null,
-        ),
-        IconButton(
-          icon: const Icon(Icons.watch),
+          icon: const Icon(Icons.stream),
           color: Colors.blue,
           onPressed: controller != null && isControllerInitialized && !isStreamingVideoRtmp ? onVideoStreamingButtonPressed : null,
         ),
         IconButton(
-          icon: controller != null && (isRecordingPaused || isStreamingPaused) ? const Icon(Icons.play_arrow) : const Icon(Icons.pause),
+          icon: controller != null && (isRecordingPaused || isStreamingPaused) ? Icon(Icons.play_arrow) : Icon(Icons.pause),
           color: Colors.blue,
           onPressed: controller != null && isControllerInitialized && (isRecordingVideo || isStreamingVideoRtmp)
               ? (controller != null && (isRecordingPaused || isStreamingPaused) ? onResumeButtonPressed : onPauseButtonPressed)
@@ -248,30 +219,31 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
     );
   }
 
-  /// Display a row of toggle to select the camera (or a message if no camera is available).
-  Widget _cameraTogglesRowWidget() {
-    final List<Widget> toggles = <Widget>[];
+Widget _cameraTogglesRowWidget() {
+  return FutureBuilder<List<CameraDescription>>(
+    future: availableCameras(),
+    builder: (BuildContext context, AsyncSnapshot<List<CameraDescription>> snapshot) {
+      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return const Text('No camera found');
+      }
 
-    if (cameras.isEmpty) {
-      return const Text('No camera found');
-    } else {
-      for (CameraDescription cameraDescription in cameras) {
-        toggles.add(
-          SizedBox(
-            width: 90.0,
-            child: RadioListTile<CameraDescription>(
-              title: Icon(getCameraLensIcon(cameraDescription.lensDirection)),
-              groupValue: controller?.description,
-              value: cameraDescription,
-              onChanged: (CameraDescription? cld) => isRecordingVideo ? null : onNewCameraSelected(cld),
-            ),
+      final List<Widget> toggles = snapshot.data!.map((CameraDescription cameraDescription) {
+        return SizedBox(
+          width: 90.0,
+          child: RadioListTile<CameraDescription>(
+            title: Icon(getCameraLensIcon(cameraDescription.lensDirection)),
+            groupValue: controller?.description,
+            value: cameraDescription,
+            onChanged: (CameraDescription? selectedCamera) =>
+                isRecordingVideo ? null : onNewCameraSelected(selectedCamera),
           ),
         );
-      }
-    }
+      }).toList();
 
-    return Row(children: toggles);
-  }
+      return Row(children: toggles);
+    },
+  );
+}
 
   String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
 
@@ -493,10 +465,10 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Url to Stream to'),
+            title: Text('Url to Stream to'),
             content: TextField(
               controller: _textFieldController,
-              decoration: const InputDecoration(hintText: "Url to Stream to"),
+              decoration: InputDecoration(hintText: "Url to Stream to"),
               onChanged: (String str) => result = str,
             ),
             actions: <Widget>[
@@ -666,24 +638,3 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   }
 }
 
-class CameraApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: CameraRTMPStream(),
-    );
-  }
-}
-
-List<CameraDescription> cameras = [];
-
-Future<void> main() async {
-  // Fetch the available cameras before initializing the app.
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    cameras = await availableCameras();
-  } on CameraException catch (e) {
-    logError(e.code, e.description ?? "No description found");
-  }
-  runApp(CameraApp());
-}
