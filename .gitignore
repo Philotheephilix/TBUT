@@ -46,3 +46,8 @@ app.*.map.json
 pubspec.lock
 /node_server/node_modules
 node_server/bun.lockb
+/detection/dataset
+/node_server/frames
+/detection/detection_venv
+/detection/output
+/runs

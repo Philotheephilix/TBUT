@@ -1,0 +1,13 @@
+train: /home/philo/Documents/GitHub/eyetear/dataset/train/images
+val: /home/philo/Documents/GitHub/eyetear/detection/dataset/valid/images
+test: /home/philo/Documents/GitHub/eyetear/dataset/test/images
+
+nc: 1
+names: ['tear']
+
+roboflow:
+  workspace: idk-cauo6
+  project: tbut_obj_classif
+  version: 6
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/idk-cauo6/tbut_obj_classif/dataset/6

@@ -10,9 +10,8 @@ if (!fs.existsSync(framesDir)) {
 
 // Configuration
 const config = {
-    sourceRtmpUrl: 'rtmp://172.31.98.86:1935/live/your_stream', // Replace with source server IP
+    sourceRtmpUrl: 'rtmp://192.168.7.129:1935/live/your_stream', // Replace with source server IP
     frameRate: 30, // Frames per second to extract
-    outputQuality: 80 // JPEG quality (1-100)
 };
 
 // Function to start frame extraction
