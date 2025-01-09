@@ -1,85 +1,105 @@
-import datetime
-from flask import Flask
-from flask_socketio import SocketIO, emit
-import base64
-import io
-from flask import jsonify
-from PIL import Image
-from inference_sdk import InferenceHTTPClient
-from concurrent.futures import ThreadPoolExecutor
+from collections import deque
+from fastapi import FastAPI, Form
+from fastapi.responses import JSONResponse
+import cv2
 import logging
-from pymongo import MongoClient
+import threading
+from queue import Queue
+from ultralytics import YOLO
+import uvicorn
+import time
 
-app = Flask(__name__)
-socketio = SocketIO(app)
+app = FastAPI()
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
-CLIENT = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com",
-    api_key="vMHIxbNsc6wiOExiBDTq"
-)
+class StreamProcessor:
+    def __init__(self):
+        self.active_streams = {}
+        self.model = YOLO("./models/tbut_75_percent_Dec_27_2024.pt")
+        # self.model = YOLO("./models/tbut_75_percent_Dec_27_2024.pt").to("cuda") 
+        self.queue = Queue(maxsize=10)  # Limit the queue size to avoid memory issues
+    
+    def start_stream(self, stream_url, patient_id):
+        def frame_producer():
+            cap = cv2.VideoCapture(stream_url)
+            while cap.isOpened() and patient_id in self.active_streams:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                try:
+                    self.queue.put(frame, timeout=1)  # Add frame to the queue
+                except Exception as e:
+                    logger.warning(f"Queue is full, dropping frame: {e}")
+            cap.release()
+            logger.info(f"Frame capture ended for patient {patient_id}")
 
-executor = ThreadPoolExecutor(max_workers=4)
+        def frame_consumer():
+            fps_counter = FPSCounter()
+            while patient_id in self.active_streams:
+                try:
+                    frame = self.queue.get(timeout=1)  # Get frame from the queue
+                except Exception:
+                    continue  # Skip if queue is empty
+                fps_counter.update()
+                results = self.model(frame)  # Process frame using YOLO
+                for r in results:
+                    for box in r.boxes:
+                        logger.info(f"Detection: {self.model.names[int(box.cls)]} ({float(box.conf):.2f})")
+                
+                # Log FPS every second
+                if time.time() - fps_counter.last_log >= 1:
+                    logger.info(f"FPS: {fps_counter.get_fps():.2f}")
+                    fps_counter.last_log = time.time()
+        
+        # Start producer and consumer threads
+        self.active_streams[patient_id] = {
+            "producer": threading.Thread(target=frame_producer, daemon=True),
+            "consumer": threading.Thread(target=frame_consumer, daemon=True)
+        }
+        self.active_streams[patient_id]["producer"].start()
+        self.active_streams[patient_id]["consumer"].start()
+    
+    def stop_stream(self, patient_id):
+        if patient_id in self.active_streams:
+            del self.active_streams[patient_id]
 
-logging.basicConfig(level=logging.INFO)
-mongo_client = MongoClient("mongodb://localhost:27017/")
-db = mongo_client['eye_tear_aravind']  # Database name
-predictions_collection = db['predictions']  # Collection name
-  
+class FPSCounter:
+    def __init__(self):
+        self.frame_times = deque(maxlen=30)
+        self.last_log = time.time()
+    
+    def update(self):
+        self.frame_times.append(time.time())
+    
+    def get_fps(self):
+        if len(self.frame_times) < 2:
+            return 0
+        return len(self.frame_times) / (self.frame_times[-1] - self.frame_times[0])
 
-def perform_inference(image):
-    result = CLIENT.infer(image, model_id="tbut_obj_classif/2")
-    return result
+processor = StreamProcessor()
 
-@socketio.on('frame')
-def handle_frame(data):
-    image_data = data.get('image')
-    client_id = data.get('client_id')
-    doctor_id = data.get('doctor_id')
-    patient_id = data.get('patient_id')
+@app.post("/api/start")
+async def start_detection(
+    doctorId: str = Form(...),
+    patientId: str = Form(...),
+    streamUrl: str = Form(...)
+):
+    try:
+        processor.start_stream(streamUrl, patientId)
+        return JSONResponse(content={"message": "Processing started"}, status_code=200)
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-    if client_id is None:
-        logging.error("Error: client_id not provided.")
-        return
+@app.post("/api/stop")
+async def stop_detection(patientId: str = Form(...)):
+    try:
+        processor.stop_stream(patientId)
+        return JSONResponse(content={"message": f"Stream stopped for patient {patientId}"}, status_code=200)
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-    if isinstance(image_data, str):
-        image_data = base64.b64decode(image_data)
-
-    if isinstance(image_data, bytes):
-        image = Image.open(io.BytesIO(image_data))
-        executor.submit(inference_worker, image, client_id, doctor_id, patient_id)
-    else:
-        logging.error("Error: Unable to process image data.")
-
-def inference_worker(image, client_id, doctor_id, patient_id):
-    result = perform_inference(image)
-    logging.info(f"Inference result: {result}")
-
-    document = {
-        'doctor_id': doctor_id,
-        'patient_id': patient_id,
-        'result': result,
-        'timestamp': datetime.datetime.now() 
-    }
-
-    predictions_collection.update_one(
-        {
-            'doctor_id': doctor_id,
-            'patient_id': patient_id
-        },
-        {'$push': {'results': document}},
-        upsert=True 
-    )
-
-    socketio.emit('inference_result', {
-        'result': result,
-        'doctor_id': doctor_id,
-        'patient_id': patient_id,
-        'patient_name': "Raja"
-    }, room=client_id)
-@app.route('/api/predictions', methods=['GET'])
-def get_predictions():
-    predictions = predictions_collection.find({}, {'_id': 0})  # Fetch all predictions, excluding the MongoDB ID
-    result_list = list(predictions)  # Convert to list
-    return jsonify(result_list), 200
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=5000)

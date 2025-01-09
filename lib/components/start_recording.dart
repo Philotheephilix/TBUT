@@ -13,7 +13,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   CameraController? controller;
   String? url;
   bool useOpenGL = true;
-  TextEditingController _textFieldController = TextEditingController(text: "rtmp://192.168.7.129:1935/live/your_stream");
+  TextEditingController _textFieldController = TextEditingController(text: "rtmp://192.168.97.129:1935/live/");
 
   bool get isStreaming => controller?.value.isStreamingVideoRtmp ?? false;
   bool isVisible = true;
@@ -139,7 +139,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
           icon: const Icon(Icons.stream),
           color: const Color(0xFF674188),
           onPressed: controller != null && isControllerInitialized && !isStreamingVideoRtmp 
-            ? onVideoStreamingButtonPressed 
+            ? startVideoStreaming 
             : null,
         ),
         IconButton(
@@ -204,7 +204,8 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   Future<bool> _validateAndCreateStream(String doctorId, String patientId, String streamUrl) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.7.129:3000/stream/start'), 
+        Uri.parse('http://192.168.97.129:5000/api/start'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'doctorId': doctorId,
           'patientId': patientId,
@@ -219,25 +220,6 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
     }
   }
 
-  void _startCountdown() {
-    setState(() {
-      _isCountingDown = true;
-      _countdown = 3;
-    });
-
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _countdown--;
-      });
-      return _countdown > 0;
-    }).then((_) {
-      setState(() {
-        _isCountingDown = false;
-      });
-      startVideoStreaming();
-    });
-  }
 
   Future<String?> _getUrl() async {
     String result = _textFieldController.text;
@@ -287,26 +269,22 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
             ),
             TextButton(
               child: Text(MaterialLocalizations.of(context).okButtonLabel),
-              onPressed: () async {
+              onPressed: () {
+                result = result + patientId.toString();
                 if (doctorId.isEmpty || patientId.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Please enter both Doctor and Patient IDs'))
                   );
                   return;
                 }
-                
-                final success = await _validateAndCreateStream(
-                  doctorId,
-                  patientId,
-                  result
-                );
-                
-                if (success) {
+
+                // Call the async function without awaiting its result
+                _validateAndCreateStream(doctorId, patientId, result);
+
+                try {
                   Navigator.pop(context, result);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to create stream. Please try again.'))
-                  );
+                } catch (FlutterError) {
+                  // Handle any error here if necessary
                 }
               },
             ),
@@ -317,9 +295,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   }
 
 
-  void onVideoStreamingButtonPressed() {
-      _startCountdown();
-    }
+
   void onStopStreamingButtonPressed() {
     stopVideoStreaming().then((_) {
       if (mounted) setState(() {});
@@ -352,10 +328,26 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
     }
 
     String? myUrl = await _getUrl();
+    String myUri = myUrl.toString();
 
+    setState(() {
+      _isCountingDown = true;
+      _countdown = 3;
+    });
+
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      setState(() {
+        _countdown--;
+      });
+      return _countdown > 0;
+    }).then((_) {
+      setState(() {
+        _isCountingDown = false;
+      });
+    });
     try {
-      url = myUrl;
-      await controller!.startVideoStreaming(url!);
+      await controller!.startVideoStreaming(myUri);
     } on CameraException catch (e) {
       _showCameraException(e);
       return null;
