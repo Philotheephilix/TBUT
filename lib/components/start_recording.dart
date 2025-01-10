@@ -13,7 +13,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   CameraController? controller;
   String? url;
   bool useOpenGL = true;
-  TextEditingController _textFieldController = TextEditingController(text: "rtmp://192.168.188.129:1935/live/");
+  TextEditingController _textFieldController = TextEditingController(text: "rtmp://192.168.97.129:1935/live/");
 
   bool get isStreaming => controller?.value.isStreamingVideoRtmp ?? false;
   bool isVisible = true;
@@ -204,7 +204,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   Future<bool> _validateAndCreateStream(String doctorId, String patientId, String streamUrl) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.188.129:5000/api/start'),
+        Uri.parse('http://192.168.97.129:5000/api/start'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'doctorId': doctorId,
