@@ -1,6 +1,5 @@
 import 'package:eyetear/pages/history_page.dart';
 import 'package:eyetear/pages/home_page.dart';
-import 'package:eyetear/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
@@ -34,7 +33,6 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     const HomePage(),      // The main capturing page
     HistoryPage(),   // The history page
-    const ProfilePage(),   // The profile page
   ];
 
   @override
@@ -53,7 +51,6 @@ class _MainPageState extends State<MainPage> {
 items: <Widget>[
           Icon(Icons.radio_button_checked_rounded, size: 40, color: _page == 0 ? const Color(0xFF674188): const Color(0xFFF7EFE5)),
           Icon(Icons.history, size: 40, color: _page == 1 ? const Color(0xFF674188) : const Color(0xFFF7EFE5)),
-          Icon(Icons.person, size: 40, color: _page == 2 ? const Color(0xFF674188) : const Color(0xFFF7EFE5)),
         ],        color: const Color(0xFF674188), 
         buttonBackgroundColor: const Color(0xFFF7EFE5), 
         backgroundColor: const Color(0xFFF7EFE5), 
