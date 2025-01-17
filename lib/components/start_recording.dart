@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CameraRTMPStream extends StatefulWidget {
+  const CameraRTMPStream({super.key});
+
   @override
   _CameraRTMPStreamState createState() {
     return _CameraRTMPStreamState();
@@ -21,10 +23,10 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
   bool useOpenGL = true;
   late SharedPreferences _prefs;
   double _sensitivity = 50.0;
-  TextEditingController _textFieldController = TextEditingController();
-  TextEditingController _ipAddressController = TextEditingController();
-  TextEditingController _doctorIdController = TextEditingController();
-  TextEditingController _patientIdController = TextEditingController();
+  final TextEditingController _textFieldController = TextEditingController();
+  final TextEditingController _ipAddressController = TextEditingController();
+  final TextEditingController _doctorIdController = TextEditingController();
+  final TextEditingController _patientIdController = TextEditingController();
   
   bool _isCountingDown = false;
   int _countdown = 3;
@@ -77,9 +79,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
               (addr.address.startsWith('192.168.') || 
                addr.address.startsWith('10.') ||
                addr.address.startsWith('172.'))) {
-            if (_localIpAddress == null) {  // Only set if not already loaded from preferences
-              _localIpAddress = addr.address;
-            }
+            _localIpAddress ??= addr.address;
             print('Selected IP address: $_localIpAddress');
             break;
           }
@@ -354,7 +354,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
         body: {
           'doctorId': doctorId,
           'patientId': patientId,
-          'streamUrl': streamUrl+'$doctorId$patientId',
+          'streamUrl': '$streamUrl$doctorId$patientId',
           'sensitivity': _sensitivity.toString(), // Add sensitivity to request
         },
       );
@@ -435,7 +435,7 @@ class _CameraRTMPStreamState extends State<CameraRTMPStream> with WidgetsBinding
 
                     try {
                       Navigator.pop(context, result);
-                    } catch (FlutterError) {
+                    } on FlutterError {
                       // Handle any error here if necessary
                     }
                   },

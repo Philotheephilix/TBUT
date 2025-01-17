@@ -6,8 +6,8 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-     backgroundColor: const Color(0xFFF7EFE5),
+    return const Scaffold(
+     backgroundColor: Color(0xFFF7EFE5),
       body: Center(
         child: CameraRTMPStream()
       ),

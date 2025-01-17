@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({Key? key}) : super(key: key);
+  const HistoryPage({super.key});
 
   @override
   _HistoryPageState createState() => _HistoryPageState();
@@ -236,10 +236,10 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
           // Rest of the widgets remain the same...
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
             child: Row(
-              children: const [
+              children: [
                 Expanded(
                   flex: 2,
                   child: Text(
@@ -367,14 +367,14 @@ class TestDetails extends StatelessWidget {
   final double sensitivity;
 
   const TestDetails({
-    Key? key,
+    super.key,
     required this.patientId,
     required this.doctorId,
     required this.elapsedTime,
     required this.confidence,
     required this.timestamp,
     required this.sensitivity,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

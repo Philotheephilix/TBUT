@@ -32,7 +32,7 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = [
     const HomePage(),      // The main capturing page
-    HistoryPage(),   // The history page
+    const HistoryPage(),   // The history page
   ];
 
   @override
