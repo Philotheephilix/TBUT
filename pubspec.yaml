@@ -38,6 +38,7 @@ dependencies:
   video_player: ^2.9.2
   http: ^1.2.2
   shared_preferences: ^2.3.5
+  intl: ^0.20.1
 
 dev_dependencies:
   flutter_test:
